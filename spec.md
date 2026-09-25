@@ -8,15 +8,19 @@
 ## Project Overview
 
 ### Project Title
+
 Study Flow
 
 ### Project Description
+
 Study Flow is a web application designed to help students study more effectively by combining a distraction-free focus timer with AI-assisted spaced-repetition flashcards. Students can paste notes or course material into the app, generate study cards, and review them on a schedule that supports long-term retention without requiring constant manual planning.
 
 ### Purpose
+
 The app exists to reduce the common problems students experience when preparing for coursework or exams: difficulty staying focused during study sessions and poor retention of material after studying. By pairing a structured study timer with intelligent review scheduling, the product helps students create consistent study habits and improve learning outcomes over time.
 
 ### Target Audience
+
 - Students studying for coursework, midterms, finals, or professional certifications
 - Learners who study regularly but struggle with concentration or memory retention
 - Users who prefer a simple, guided workflow for turning notes into manageable study tasks
@@ -24,6 +28,7 @@ The app exists to reduce the common problems students experience when preparing 
 ## User Scenarios & Testing
 
 ### User Story 1 - Sign up and begin a personalized study workflow (Priority: P1)
+
 A student creates an account and chooses a study goal or course area to start using Study Flow.
 
 **Why this priority**: Without an account, the student cannot save notes, review progress, or build a personalized study history. This is the entry point to the product and creates the foundation for all learning workflows.
@@ -39,6 +44,7 @@ A student creates an account and chooses a study goal or course area to start us
 ---
 
 ### User Story 2 - Create study content from notes and generate flashcards (Priority: P1)
+
 A student pastes class notes or study material, and the app transforms it into study cards that are ready for review.
 
 **Why this priority**: This is the core value of the product. Converting notes into manageable review items creates a practical study workflow that directly supports retention.
@@ -54,6 +60,7 @@ A student pastes class notes or study material, and the app transforms it into s
 ---
 
 ### User Story 3 - Read planned reviews and study progress in a clear dashboard (Priority: P1)
+
 A student opens the app to see upcoming reviews, current study progress, and completed sessions in a simple overview.
 
 **Why this priority**: Students need visibility into what they should review next and how their study habits are progressing. Reading the dashboard builds trust and helps them stay consistent.
@@ -69,6 +76,7 @@ A student opens the app to see upcoming reviews, current study progress, and com
 ---
 
 ### User Story 4 - Update study materials and review preferences (Priority: P2)
+
 A student edits a flashcard, adjusts its difficulty, or changes study settings to improve the learning experience.
 
 **Why this priority**: Students need flexibility as their understanding evolves. Small updates keep review content accurate and improve the value of the learning system.
@@ -84,6 +92,7 @@ A student edits a flashcard, adjusts its difficulty, or changes study settings t
 ---
 
 ### User Story 5 - Delete study content and manage account data (Priority: P2)
+
 A student removes outdated study sets, individual flashcards, or their account when they no longer need the content.
 
 **Why this priority**: Clean-up and data control are important for trust, accurate study history, and users who want to reset or reorganize their materials.
@@ -143,16 +152,19 @@ A student removes outdated study sets, individual flashcards, or their account w
 ## API Endpoints
 
 ### Authentication
+
 - `POST /api/v1/auth/signup` — Create a new student account.
 - `POST /api/v1/auth/login` — Sign in an existing student.
 - `POST /api/v1/auth/logout` — End the current session.
 
 ### Student and Profile
+
 - `GET /api/v1/users/me` — Retrieve the authenticated student profile and settings.
 - `PATCH /api/v1/users/me` — Update profile preferences or study goals.
 - `DELETE /api/v1/users/me` — Delete the student account and associated data.
 
 ### Study Sets
+
 - `POST /api/v1/study-sets` — Create a new study set from pasted notes or material.
 - `GET /api/v1/study-sets` — List all study sets for the authenticated student.
 - `GET /api/v1/study-sets/{studySetId}` — Retrieve a specific study set and its contents.
@@ -160,6 +172,7 @@ A student removes outdated study sets, individual flashcards, or their account w
 - `DELETE /api/v1/study-sets/{studySetId}` — Remove a study set and its related flashcards.
 
 ### Flashcards and Review
+
 - `POST /api/v1/study-sets/{studySetId}/flashcards/generate` — Generate flashcards from notes for a study set.
 - `GET /api/v1/flashcards/review` — Retrieve flashcards due for review.
 - `POST /api/v1/flashcards/{flashcardId}/review` — Record a student response and update review scheduling.
@@ -167,6 +180,7 @@ A student removes outdated study sets, individual flashcards, or their account w
 - `DELETE /api/v1/flashcards/{flashcardId}` — Delete a single flashcard.
 
 ### Focus Sessions
+
 - `POST /api/v1/focus-sessions` — Start a study session with a timer.
 - `PATCH /api/v1/focus-sessions/{sessionId}` — Update or complete a session.
 - `GET /api/v1/focus-sessions` — Retrieve session history for the student.
@@ -174,6 +188,7 @@ A student removes outdated study sets, individual flashcards, or their account w
 ## Implementation Priority
 
 ### Priority P1 — Core MVP
+
 - Student signup and login
 - Study set creation from notes
 - Flashcard generation and review scheduling
@@ -181,12 +196,14 @@ A student removes outdated study sets, individual flashcards, or their account w
 - Distraction-free focus timer
 
 ### Priority P2 — Product polish and retention support
+
 - Editing and deleting flashcards and study sets
 - Personalized review settings and difficulty tracking
 - Export or archival capabilities for completed study sets
 - Improved review analytics and visual progress summaries
 
 ### Priority P3 — Expansion
+
 - Multi-course or semester organization
 - Teacher or study-group sharing workflows
 - Advanced content import and AI tuning for smarter card generation
