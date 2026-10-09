@@ -6,32 +6,25 @@ export type GeneratedFlashcard = {
 const MAX_CARDS = 20;
 
 function cleanText(value: string): string {
-  return value.replace(/\s+/g, ' ').trim();
+  return value.replace(/\s+/g, " ").trim();
 }
 
 function removeListMarker(value: string): string {
-  return value.replace(/^\s*(?:[-*]|\d+[.)])\s+/, '');
+  return value.replace(/^\s*(?:[-*]|\d+[.)])\s+/, "");
 }
 
 function normalizeSubject(subject: string): string {
-  return subject.replace(/^(A|An|The)\s+/, (match) =>
-    match.toLowerCase(),
-  );
+  return subject.replace(/^(A|An|The)\s+/, (match) => match.toLowerCase());
 }
 
-function createCard(
-  text: string,
-): GeneratedFlashcard | null {
-  const sentence = cleanText(removeListMarker(text))
-    .replace(/[.!?]$/, '');
+function createCard(text: string): GeneratedFlashcard | null {
+  const sentence = cleanText(removeListMarker(text)).replace(/[.!?]$/, "");
 
   if (sentence.length < 25) {
     return null;
   }
 
-  const colonMatch = sentence.match(
-    /^([^:]{2,60}):\s*(.{15,})$/,
-  );
+  const colonMatch = sentence.match(/^([^:]{2,60}):\s*(.{15,})$/);
 
   if (colonMatch) {
     const term = cleanText(colonMatch[1]);
@@ -44,7 +37,7 @@ function createCard(
   }
 
   const relationshipMatch = sentence.match(
-    /^(.{2,60}?)\s+(is|are|means|refers to|allow|allows|enable|enables|store|stores|contain|contains|use|uses)\s+(.+)$/i,
+    /^(.{2,60}?)\s+(is|are|means|refers to|allow|allows|enable|enables|store|stores|contain|contains|use|uses)\s+(.+)$/i
   );
 
   if (!relationshipMatch) {
@@ -55,10 +48,7 @@ function createCard(
   const verb = relationshipMatch[2].toLowerCase();
   const explanation = cleanText(relationshipMatch[3]);
 
-  if (
-    subject.split(' ').length > 8 ||
-    explanation.length < 15
-  ) {
+  if (subject.split(" ").length > 8 || explanation.length < 15) {
     return null;
   }
 
@@ -66,14 +56,10 @@ function createCard(
 
   let question: string;
 
-  if (
-    ['is', 'are', 'means', 'refers to'].includes(verb)
-  ) {
+  if (["is", "are", "means", "refers to"].includes(verb)) {
     question = `What is ${normalizedSubject}?`;
-  } else if (verb.endsWith('s')) {
-    const baseVerb = verb === 'uses'
-      ? 'use'
-      : verb.slice(0, -1);
+  } else if (verb.endsWith("s")) {
+    const baseVerb = verb === "uses" ? "use" : verb.slice(0, -1);
 
     question = `What does ${normalizedSubject} ${baseVerb}?`;
   } else {
@@ -87,11 +73,9 @@ function createCard(
 }
 
 export function generateFlashcardsFromNotes(
-  notes: string,
+  notes: string
 ): GeneratedFlashcard[] {
-  const normalized = notes
-    .replace(/\r/g, '')
-    .replace(/[•●▪]/g, '\n');
+  const normalized = notes.replace(/\r/g, "").replace(/[•●▪]/g, "\n");
 
   const segments = normalized
     .split(/\n+|(?<=[.!?])\s+(?=[A-Z])/)

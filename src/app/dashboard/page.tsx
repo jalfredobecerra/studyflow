@@ -1,213 +1,266 @@
-import type { Metadata } from 'next';
-import Link from 'next/link';
-import { redirect } from 'next/navigation';
+import type { Metadata } from "next";
+import Link from "next/link";
+import { signOut } from "@/auth";
 
-import { auth, signOut } from '@/auth';
-import sql from '@/lib/db';
+import { requireStudyUser, getDashboardData } from "@/lib/study-data";
 
 export const metadata: Metadata = {
-  title: 'Dashboard',
-  description:
-    'View your Study Flow study sets, learning goals, and flashcard collections.',
-  robots: {
-    index: false,
-    follow: false,
-  },
-};
-
-type DashboardUser = {
-  id: string;
-  email: string;
-  study_goal: string | null;
-  course_area: string | null;
-};
-
-type DashboardStudySet = {
-  id: string;
-  title: string;
-  card_count: number;
+  title: "Dashboard | Study Flow",
 };
 
 export default async function DashboardPage() {
-  const session = await auth();
-
-  if (!session?.user?.email) {
-    redirect('/login');
-  }
-
-  const users = await sql<DashboardUser[]>`
-    SELECT id, email, study_goal, course_area
-    FROM users
-    WHERE email = ${session.user.email}
-    LIMIT 1
-  `;
-
-  const user = users[0];
-
-  if (!user) {
-    redirect('/login');
-  }
-
-  if (!user.study_goal || !user.course_area) {
-    redirect('/onboarding');
-  }
-
-  const studySets = await sql<DashboardStudySet[]>`
-    SELECT
-      study_sets.id,
-      study_sets.title,
-      COUNT(flashcards.id)
-        FILTER (
-          WHERE flashcards.status <> 'rejected'
-        )::int AS card_count
-    FROM study_sets
-    LEFT JOIN flashcards
-      ON flashcards.study_set_id = study_sets.id
-    WHERE study_sets.user_id = ${user.id}
-    GROUP BY
-      study_sets.id,
-      study_sets.title,
-      study_sets.created_at
-    ORDER BY study_sets.created_at DESC
-  `;
+  const user = await requireStudyUser();
+  const data = await getDashboardData(user.id);
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <Link
-            href="/dashboard"
-            className="text-xl font-bold text-indigo-600"
-          >
-            Study Flow
-          </Link>
+    <main className="mx-auto max-w-6xl space-y-8 p-6">
+      {/* HEADER */}
 
-          <form
-            action={async () => {
-              'use server';
+      <header className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Study Flow Dashboard</h1>
 
-              await signOut({
-                redirectTo: '/login',
-              });
-            }}
-          >
-            <button
-              type="submit"
-              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-            >
-              Log out
-            </button>
-          </form>
+          <p className="mt-2 text-slate-600">
+            Your study plan and learning progress.
+          </p>
         </div>
+
+        <form
+          action={async () => {
+            "use server";
+
+            await signOut({
+              redirectTo: "/login",
+            });
+          }}
+        >
+          <button type="submit" className="rounded-lg border px-4 py-2">
+            Log out
+          </button>
+        </form>
       </header>
 
-      <section className="mx-auto max-w-6xl px-6 py-10">
-        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900">
-              Your Study Dashboard
-            </h1>
+      {/* STUDY PREFERENCES */}
 
-            <p className="mt-2 text-slate-600">
-              Welcome, {user.email}
+      <section className="rounded-xl border p-6">
+        <h2 className="text-xl font-semibold">Your study preferences</h2>
+
+        <p className="mt-2">
+          <strong>Study goal:</strong> <span>{user.studyGoal}</span>
+        </p>
+
+        <p>
+          <strong>Course:</strong> <span>{user.courseArea}</span>
+        </p>
+
+        <p>
+          <strong>Review cadence:</strong> {user.cadenceDays} days
+        </p>
+
+        <p>
+          <strong>Session length:</strong> {user.sessionMinutes} minutes
+        </p>
+
+        <Link
+          href="/preferences"
+          className="mt-4 inline-block text-indigo-600 underline"
+        >
+          Study preferences
+        </Link>
+      </section>
+
+      {/* NEXT RECOMMENDED STUDY ACTION */}
+
+      <section className="rounded-xl border p-6">
+        <h2 className="text-2xl font-semibold">Your next study action</h2>
+
+        {data.dueCount > 0 ? (
+          <>
+            <p className="mt-3 text-slate-600">
+              You have {data.dueCount} flashcards due. Start with the most
+              urgent cards.
             </p>
+
+            <Link
+              href="/review"
+              className="mt-4 inline-block rounded-lg bg-indigo-600 px-5 py-3 text-white"
+            >
+              Review due cards
+            </Link>
+          </>
+        ) : data.sets.length === 0 ? (
+          <>
+            <p className="mt-3 text-slate-600">
+              Create your first study set to begin learning.
+            </p>
+
+            <Link
+              href="/studysets/new"
+              className="mt-4 inline-block text-indigo-600 underline"
+            >
+              Create study set
+            </Link>
+          </>
+        ) : (
+          <>
+            <p className="mt-3 text-slate-600">
+              Nothing is due right now. Add or accept flashcards, or return when
+              your next review is scheduled.
+            </p>
+
+            <Link
+              href="/studysets/new"
+              className="mt-4 inline-block text-indigo-600 underline"
+            >
+              Create another study set
+            </Link>
+          </>
+        )}
+      </section>
+
+      {/* STUDY PROGRESS */}
+
+      <section>
+        <h2 className="mb-4 text-2xl font-semibold">Study progress</h2>
+
+        <div className="grid gap-4 sm:grid-cols-3">
+          <article className="rounded-xl border p-5">
+            <p className="text-sm text-slate-500">Cards reviewed</p>
+
+            <p className="mt-2 text-3xl font-bold">{data.reviewedCards}</p>
+          </article>
+
+          <article className="rounded-xl border p-5">
+            <p className="text-sm text-slate-500">Completed sessions</p>
+
+            <p className="mt-2 text-3xl font-bold">{data.completedSessions}</p>
+          </article>
+
+          <article className="rounded-xl border p-5">
+            <p className="text-sm text-slate-500">Review streak (UTC days)</p>
+
+            <p className="mt-2 text-3xl font-bold">{data.streak}</p>
+          </article>
+        </div>
+      </section>
+
+      {/* UPCOMING REVIEWS */}
+
+      <section className="rounded-xl border p-6">
+        <h2 className="text-2xl font-semibold">Upcoming reviews</h2>
+
+        {data.upcoming.length === 0 ? (
+          <p className="mt-3 text-slate-600">
+            No accepted cards have been scheduled yet.
+          </p>
+        ) : (
+          <div className="mt-4 space-y-3">
+            {data.upcoming.map((card) => (
+              <article key={card.id} className="rounded-lg border p-4">
+                <p className="font-medium">{card.front}</p>
+
+                <p className="mt-1 text-sm text-slate-500">
+                  {card.studySetTitle}
+                </p>
+
+                <p className="mt-1 text-sm">
+                  {card.isDue
+                    ? "Due now"
+                    : `Due ${new Date(card.dueAt).toLocaleDateString("en-US", {
+                        timeZone: "UTC",
+                      })}`}
+                </p>
+              </article>
+            ))}
           </div>
+        )}
+      </section>
+
+      {/* RECENT COMPLETED SESSIONS */}
+
+      <section className="rounded-xl border p-6">
+        <h2 className="text-2xl font-semibold">Recent completed sessions</h2>
+
+        {data.history.length === 0 ? (
+          <p className="mt-3 text-slate-600">
+            You have no completed sessions yet. Complete a review session to
+            start tracking your progress.
+          </p>
+        ) : (
+          <div className="mt-4 space-y-3">
+            {data.history.map((session) => (
+              <article key={session.id} className="rounded-lg border p-4">
+                <p className="font-medium">
+                  {session.cardsReviewed} cards reviewed
+                </p>
+
+                <p className="text-sm text-slate-500">
+                  {new Date(session.completedAt).toLocaleDateString("en-US", {
+                    timeZone: "UTC",
+                  })}
+                </p>
+
+                <p className="text-sm text-slate-500">
+                  Session target: {session.targetMinutes} minutes
+                </p>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* STUDY SETS */}
+
+      <section className="rounded-xl border p-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <h2 className="text-2xl font-semibold">Your study sets</h2>
 
           <Link
             href="/studysets/new"
-            className="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-5 py-3 font-medium text-white hover:bg-indigo-700"
+            className="rounded-lg bg-indigo-600 px-4 py-2 text-white"
           >
             Create study set
           </Link>
         </div>
 
-        <div className="mt-8 grid gap-6 md:grid-cols-2">
-          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-sm font-medium text-slate-500">
-              Study goal
-            </p>
+        {data.sets.length === 0 ? (
+          <p className="mt-4 text-slate-600">You have no study sets yet.</p>
+        ) : (
+          <div className="mt-5 space-y-4">
+            {data.sets.map((set) => (
+              <article key={set.id} className="rounded-lg border p-4">
+                <h3 className="text-lg font-semibold">{set.title}</h3>
 
-            <p className="mt-2 text-xl font-semibold text-slate-900">
-              {user.study_goal}
-            </p>
-          </div>
+                <p className="mt-1 text-sm text-slate-600">
+                  {set.cardCount} active cards, {set.acceptedCount} accepted
+                </p>
 
-          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-sm font-medium text-slate-500">
-              Course area
-            </p>
-
-            <p className="mt-2 text-xl font-semibold text-slate-900">
-              {user.course_area}
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-6">
-          <Link
-            href="/onboarding"
-            className="inline-block rounded-lg border border-slate-300 bg-white px-4 py-2 font-medium text-slate-700 hover:bg-slate-100"
-          >
-            Edit study preferences
-          </Link>
-        </div>
-
-        <section className="mt-10">
-          <div className="flex items-center justify-between gap-4">
-            <h2 className="text-2xl font-bold text-slate-900">
-              Your study sets
-            </h2>
-
-            <p className="text-sm text-slate-500">
-              {studySets.length} total
-            </p>
-          </div>
-
-          {studySets.length === 0 ? (
-            <div className="mt-4 rounded-xl border border-slate-200 bg-white p-8 text-center">
-              <h3 className="text-lg font-semibold text-slate-900">
-                No study sets yet
-              </h3>
-
-              <p className="mt-2 text-slate-600">
-                Create your first study set by adding your
-                class notes.
-              </p>
-
-              <Link
-                href="/studysets/new"
-                className="mt-5 inline-block rounded-lg bg-indigo-600 px-5 py-3 font-medium text-white hover:bg-indigo-700"
-              >
-                Create your first study set
-              </Link>
-            </div>
-          ) : (
-            <div className="mt-4 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-              {studySets.map((studySet) => (
-                <Link
-                  key={studySet.id}
-                  href={`/studysets/${studySet.id}`}
-                  className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-indigo-300 hover:shadow-md"
-                >
-                  <h3 className="text-lg font-semibold text-slate-900">
-                    {studySet.title}
-                  </h3>
-
-                  <p className="mt-2 text-sm text-slate-500">
-                    {studySet.card_count}{' '}
-                    {studySet.card_count === 1
-                      ? 'flashcard'
-                      : 'flashcards'}
+                {set.acceptedCount === 0 && (
+                  <p className="mt-2 text-sm text-amber-700">
+                    Accept generated flashcards to make them available for
+                    review.
                   </p>
+                )}
 
-                  <p className="mt-4 text-sm font-medium text-indigo-600">
-                    Review study set
-                  </p>
-                </Link>
-              ))}
-            </div>
-          )}
-        </section>
+                <div className="mt-3 flex flex-wrap gap-4">
+                  <Link
+                    href={`/studysets/${set.id}`}
+                    className="text-indigo-600 underline"
+                  >
+                    Open study set
+                  </Link>
+
+                  <Link
+                    href={`/studysets/manage/${set.id}`}
+                    className="text-indigo-600 underline"
+                  >
+                    Manage
+                  </Link>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
     </main>
   );

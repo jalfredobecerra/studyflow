@@ -1,14 +1,14 @@
-import type { Metadata } from 'next';
-import Link from 'next/link';
-import { redirect } from 'next/navigation';
+import type { Metadata } from "next";
+import Link from "next/link";
+import { redirect } from "next/navigation";
 
-import StudySetForm from '@/app/ui/study-set-form';
-import { auth } from '@/auth';
+import StudySetForm from "@/app/ui/study-set-form";
+import { auth } from "@/auth";
 
 export const metadata: Metadata = {
-  title: 'Create Study Set',
+  title: "Create Study Set",
   description:
-    'Create a study set from class notes and generate flashcards for review.',
+    "Create a study set from class notes and generate flashcards for review.",
   robots: {
     index: false,
     follow: false,
@@ -19,7 +19,7 @@ export default async function NewStudySetPage() {
   const session = await auth();
 
   if (!session?.user?.email) {
-    redirect('/login');
+    redirect("/login");
   }
 
   return (
@@ -38,8 +38,7 @@ export default async function NewStudySetPage() {
           </h1>
 
           <p className="mt-2 text-slate-600">
-            Paste your notes and Study Flow will create
-            flashcards for review.
+            Paste your notes and Study Flow will create flashcards for review.
           </p>
         </div>
 

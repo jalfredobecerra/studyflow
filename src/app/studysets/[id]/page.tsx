@@ -1,11 +1,11 @@
-import type { Metadata } from 'next';
-import Link from 'next/link';
-import { notFound, redirect } from 'next/navigation';
-import { cache } from 'react';
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound, redirect } from "next/navigation";
+import { cache } from "react";
 
-import FlashcardEditor from '@/app/ui/flashcard-editor';
-import { auth } from '@/auth';
-import sql from '@/lib/db';
+import FlashcardEditor from "@/app/ui/flashcard-editor";
+import { auth } from "@/auth";
+import sql from "@/lib/db";
 
 type StudySetPageProps = {
   params: Promise<{
@@ -29,10 +29,7 @@ const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const getOwnedStudySet = cache(
-  async (
-    id: string,
-    email: string,
-  ): Promise<StudySet | null> => {
+  async (id: string, email: string): Promise<StudySet | null> => {
     const studySets = await sql<StudySet[]>`
       SELECT
         study_sets.id,
@@ -46,7 +43,7 @@ const getOwnedStudySet = cache(
     `;
 
     return studySets[0] ?? null;
-  },
+  }
 );
 
 export async function generateMetadata({
@@ -64,19 +61,16 @@ export async function generateMetadata({
 
   if (!session?.user?.email || !UUID_PATTERN.test(id)) {
     return {
-      title: 'Study Set',
+      title: "Study Set",
       ...privateMetadata,
     };
   }
 
-  const studySet = await getOwnedStudySet(
-    id,
-    session.user.email,
-  );
+  const studySet = await getOwnedStudySet(id, session.user.email);
 
   if (!studySet) {
     return {
-      title: 'Study Set Not Found',
+      title: "Study Set Not Found",
       ...privateMetadata,
     };
   }
@@ -88,13 +82,11 @@ export async function generateMetadata({
   };
 }
 
-export default async function StudySetPage({
-  params,
-}: StudySetPageProps) {
+export default async function StudySetPage({ params }: StudySetPageProps) {
   const session = await auth();
 
   if (!session?.user?.email) {
-    redirect('/login');
+    redirect("/login");
   }
 
   const { id } = await params;
@@ -103,10 +95,7 @@ export default async function StudySetPage({
     notFound();
   }
 
-  const studySet = await getOwnedStudySet(
-    id,
-    session.user.email,
-  );
+  const studySet = await getOwnedStudySet(id, session.user.email);
 
   if (!studySet) {
     notFound();
@@ -125,11 +114,11 @@ export default async function StudySetPage({
   `;
 
   const acceptedCount = cards.filter(
-    (card) => card.status === 'accepted',
+    (card) => card.status === "accepted"
   ).length;
 
   const generatedCount = cards.filter(
-    (card) => card.status === 'generated',
+    (card) => card.status === "generated"
   ).length;
 
   return (
@@ -148,8 +137,7 @@ export default async function StudySetPage({
           </h1>
 
           <p className="mt-2 text-slate-600">
-            Review each generated card. You can edit,
-            accept, or reject it.
+            Review each generated card. You can edit, accept, or reject it.
           </p>
 
           <div className="mt-5 flex flex-wrap gap-3 text-sm">
@@ -164,9 +152,7 @@ export default async function StudySetPage({
         </div>
 
         <section className="mt-8">
-          <h2 className="text-2xl font-bold text-slate-900">
-            Flashcards
-          </h2>
+          <h2 className="text-2xl font-bold text-slate-900">Flashcards</h2>
 
           {cards.length === 0 ? (
             <div className="mt-4 rounded-xl border border-slate-200 bg-white p-6">
