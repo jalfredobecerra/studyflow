@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 
 import { createStudySet, type CreateStudySetState } from "@/lib/actions";
 
@@ -12,9 +12,20 @@ export default function StudySetForm() {
     initialState
   );
 
+  const [title, setTitle] = useState("");
+  const [sourceNotes, setSourceNotes] = useState("");
+
+  const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    formRef.current?.setAttribute("data-hydrated", "true");
+  }, []);
+
   return (
     <form
+      ref={formRef}
       action={formAction}
+      data-hydrated="false"
       className="space-y-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
     >
       <div>
@@ -29,7 +40,10 @@ export default function StudySetForm() {
           id="title"
           name="title"
           type="text"
+          value={title}
+          onChange={(event) => setTitle(event.target.value)}
           required
+          minLength={2}
           maxLength={120}
           aria-invalid={Boolean(state.errors?.title)}
           aria-describedby={state.errors?.title ? "title-error" : undefined}
@@ -57,12 +71,15 @@ export default function StudySetForm() {
         <textarea
           id="sourceNotes"
           name="sourceNotes"
+          value={sourceNotes}
+          onChange={(event) => setSourceNotes(event.target.value)}
           required
+          maxLength={20000}
           rows={14}
           aria-invalid={Boolean(state.errors?.sourceNotes)}
           aria-describedby={
             state.errors?.sourceNotes
-              ? "source-notes-error"
+              ? "source-notes-error source-notes-help"
               : "source-notes-help"
           }
           className="w-full resize-y rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-indigo-500"
@@ -84,7 +101,7 @@ export default function StudySetForm() {
       </div>
 
       {state.message && (
-        <p className="text-sm text-red-600" aria-live="polite">
+        <p role="alert" className="text-sm text-red-600">
           {state.message}
         </p>
       )}

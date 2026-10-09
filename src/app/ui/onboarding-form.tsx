@@ -1,19 +1,27 @@
-"use client";
+'use client';
 
-import { useActionState } from "react";
+import { useActionState } from 'react';
 
 import {
   saveOnboarding,
   skipOnboarding,
   type OnboardingState,
-} from "@/lib/actions";
+} from '@/lib/actions';
+
+type OnboardingFormProps = {
+  studyGoal?: string;
+  courseArea?: string;
+};
 
 const initialState: OnboardingState = {};
 
-export default function OnboardingForm() {
+export default function OnboardingForm({
+  studyGoal = '',
+  courseArea = '',
+}: OnboardingFormProps) {
   const [state, formAction, isPending] = useActionState(
     saveOnboarding,
-    initialState
+    initialState,
   );
 
   return (
@@ -32,11 +40,13 @@ export default function OnboardingForm() {
         <select
           id="studyGoal"
           name="studyGoal"
-          defaultValue=""
+          defaultValue={studyGoal}
           required
           aria-invalid={Boolean(state.errors?.studyGoal)}
           aria-describedby={
-            state.errors?.studyGoal ? "study-goal-error" : undefined
+            state.errors?.studyGoal
+              ? 'study-goal-error'
+              : undefined
           }
           className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-indigo-500"
         >
@@ -44,19 +54,36 @@ export default function OnboardingForm() {
             Select a goal
           </option>
 
-          <option value="Exam Preparation">Exam preparation</option>
+          <option value="Exam Preparation">
+            Exam preparation
+          </option>
 
-          <option value="Weekly Review">Weekly review</option>
+          <option value="Weekly Review">
+            Weekly review
+          </option>
 
-          <option value="Class Notes">Review class notes</option>
+          <option value="Class Notes">
+            Review class notes
+          </option>
 
-          <option value="Vocabulary">Learn vocabulary</option>
+          <option value="Vocabulary">
+            Learn vocabulary
+          </option>
 
-          <option value="Programming">Study programming</option>
+          <option value="Programming">
+            Study programming
+          </option>
+
+          <option value="General Study">
+            General study
+          </option>
         </select>
 
         {state.errors?.studyGoal && (
-          <div id="study-goal-error" className="mt-1 text-sm text-red-600">
+          <div
+            id="study-goal-error"
+            className="mt-1 text-sm text-red-600"
+          >
             {state.errors.studyGoal.map((error) => (
               <p key={error}>{error}</p>
             ))}
@@ -76,18 +103,24 @@ export default function OnboardingForm() {
           id="courseArea"
           name="courseArea"
           type="text"
+          defaultValue={courseArea}
           required
           maxLength={150}
           aria-invalid={Boolean(state.errors?.courseArea)}
           aria-describedby={
-            state.errors?.courseArea ? "course-area-error" : undefined
+            state.errors?.courseArea
+              ? 'course-area-error'
+              : undefined
           }
           className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-indigo-500"
           placeholder="For example, Software Engineering"
         />
 
         {state.errors?.courseArea && (
-          <div id="course-area-error" className="mt-1 text-sm text-red-600">
+          <div
+            id="course-area-error"
+            className="mt-1 text-sm text-red-600"
+          >
             {state.errors.courseArea.map((error) => (
               <p key={error}>{error}</p>
             ))}
@@ -96,7 +129,10 @@ export default function OnboardingForm() {
       </div>
 
       {state.message && (
-        <p className="text-sm text-red-600" aria-live="polite">
+        <p
+          className="text-sm text-red-600"
+          aria-live="polite"
+        >
           {state.message}
         </p>
       )}
@@ -107,14 +143,15 @@ export default function OnboardingForm() {
           disabled={isPending}
           className="w-full rounded-lg bg-indigo-600 px-4 py-2 font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isPending ? "Saving..." : "Continue to dashboard"}
+          {isPending ? 'Saving...' : 'Continue to dashboard'}
         </button>
 
         <button
           type="submit"
           formAction={skipOnboarding}
           formNoValidate
-          className="w-full rounded-lg border border-slate-300 px-4 py-2 font-medium text-slate-700 hover:bg-slate-50"
+          disabled={isPending}
+          className="w-full rounded-lg border border-slate-300 px-4 py-2 font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
         >
           Skip for now
         </button>

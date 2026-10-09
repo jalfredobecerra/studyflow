@@ -1,98 +1,126 @@
-import "server-only";
-
 export type GeneratedFlashcard = {
   front: string;
   back: string;
 };
 
+const MAX_CARDS = 20;
+
 function cleanText(value: string): string {
-  return value.replace(/\s+/g, " ").trim();
+  return value.replace(/\s+/g, ' ').trim();
 }
 
-function createQuestionFromSentence(sentence: string): string {
-  const cleanedSentence = cleanText(sentence);
+function removeListMarker(value: string): string {
+  return value.replace(/^\s*(?:[-*]|\d+[.)])\s+/, '');
+}
 
-  const definitionMatch = cleanedSentence.match(
-    /^(.{2,60}?)\s+(?:is|are|means|refers to)\s+(.+)$/i
+function normalizeSubject(subject: string): string {
+  return subject.replace(/^(A|An|The)\s+/, (match) =>
+    match.toLowerCase(),
   );
+}
 
-  if (definitionMatch) {
-    const subject = definitionMatch[1].trim();
+function createCard(
+  text: string,
+): GeneratedFlashcard | null {
+  const sentence = cleanText(removeListMarker(text))
+    .replace(/[.!?]$/, '');
 
-    return `What is ${subject}?`;
+  if (sentence.length < 25) {
+    return null;
   }
 
-  const words = cleanedSentence.split(" ");
+  const colonMatch = sentence.match(
+    /^([^:]{2,60}):\s*(.{15,})$/,
+  );
 
-  const preview =
-    words.length > 8 ? `${words.slice(0, 8).join(" ")}...` : cleanedSentence;
+  if (colonMatch) {
+    const term = cleanText(colonMatch[1]);
+    const definition = cleanText(colonMatch[2]);
 
-  return `Explain this idea: ${preview}`;
+    return {
+      front: `What is ${normalizeSubject(term)}?`,
+      back: definition,
+    };
+  }
+
+  const relationshipMatch = sentence.match(
+    /^(.{2,60}?)\s+(is|are|means|refers to|allow|allows|enable|enables|store|stores|contain|contains|use|uses)\s+(.+)$/i,
+  );
+
+  if (!relationshipMatch) {
+    return null;
+  }
+
+  const subject = cleanText(relationshipMatch[1]);
+  const verb = relationshipMatch[2].toLowerCase();
+  const explanation = cleanText(relationshipMatch[3]);
+
+  if (
+    subject.split(' ').length > 8 ||
+    explanation.length < 15
+  ) {
+    return null;
+  }
+
+  const normalizedSubject = normalizeSubject(subject);
+
+  let question: string;
+
+  if (
+    ['is', 'are', 'means', 'refers to'].includes(verb)
+  ) {
+    question = `What is ${normalizedSubject}?`;
+  } else if (verb.endsWith('s')) {
+    const baseVerb = verb === 'uses'
+      ? 'use'
+      : verb.slice(0, -1);
+
+    question = `What does ${normalizedSubject} ${baseVerb}?`;
+  } else {
+    question = `What do ${normalizedSubject} ${verb}?`;
+  }
+
+  return {
+    front: question,
+    back: sentence,
+  };
 }
 
 export function generateFlashcardsFromNotes(
-  notes: string
+  notes: string,
 ): GeneratedFlashcard[] {
-  const normalizedNotes = notes.replace(/\r/g, "").replace(/[•●▪]/g, "\n");
+  const normalized = notes
+    .replace(/\r/g, '')
+    .replace(/[•●▪]/g, '\n');
 
-  const lines = normalizedNotes
-    .split("\n")
-    .map((line) => cleanText(line))
-    .filter((line) => line.length >= 20);
+  const segments = normalized
+    .split(/\n+|(?<=[.!?])\s+(?=[A-Z])/)
+    .map(cleanText)
+    .filter(Boolean);
 
   const cards: GeneratedFlashcard[] = [];
+  const questions = new Set<string>();
 
-  for (const line of lines) {
-    const colonIndex = line.indexOf(":");
+  for (const segment of segments) {
+    const card = createCard(segment);
 
-    if (colonIndex > 1 && colonIndex < 70) {
-      const front = cleanText(line.slice(0, colonIndex));
-      const back = cleanText(line.slice(colonIndex + 1));
-
-      if (front.length >= 2 && back.length >= 10) {
-        cards.push({
-          front: `What is ${front}?`,
-          back,
-        });
-
-        continue;
-      }
+    if (!card) {
+      continue;
     }
 
-    const sentences = line
-      .split(/(?<=[.!?])\s+/)
-      .map((sentence) => cleanText(sentence))
-      .filter((sentence) => sentence.length >= 30);
+    const questionKey = card.front.toLowerCase();
 
-    for (const sentence of sentences) {
-      cards.push({
-        front: createQuestionFromSentence(sentence),
-        back: sentence,
-      });
+    if (questions.has(questionKey)) {
+      continue;
+    }
+
+    questions.add(questionKey);
+    cards.push(card);
+
+    if (cards.length >= MAX_CARDS) {
+      break;
     }
   }
 
-  if (cards.length === 0) {
-    const sentences = normalizedNotes
-      .split(/(?<=[.!?])\s+/)
-      .map((sentence) => cleanText(sentence))
-      .filter((sentence) => sentence.length >= 30);
-
-    for (const sentence of sentences) {
-      cards.push({
-        front: createQuestionFromSentence(sentence),
-        back: sentence,
-      });
-    }
-  }
-
-  const uniqueCards = cards.filter(
-    (card, index, allCards) =>
-      allCards.findIndex(
-        (candidate) =>
-          candidate.front.toLowerCase() === card.front.toLowerCase()
-      ) === index
-  );
-
-  return uniqueCards.slice(0, 20);
+  return cards;
 }
