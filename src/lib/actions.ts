@@ -1,18 +1,18 @@
-'use server';
+"use server";
 
-import bcrypt from 'bcryptjs';
-import { AuthError } from 'next-auth';
-import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
-import { z } from 'zod';
+import bcrypt from "bcryptjs";
+import { AuthError } from "next-auth";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { z } from "zod";
 
-import { auth, signIn } from '@/auth';
-import sql from '@/lib/db';
-import { generateFlashcardsFromNotes } from '@/lib/flashcards';
+import { auth, signIn } from "@/auth";
+import sql from "@/lib/db";
+import { generateFlashcardsFromNotes } from "@/lib/flashcards";
 import {
   validateFlashcardForm,
   type FlashcardActionState,
-} from '@/lib/flashcard-validation';
+} from "@/lib/flashcard-validation";
 
 export type SignupState = {
   errors?: {
@@ -50,40 +50,40 @@ type CurrentUser = {
 
 const SignupSchema = z
   .object({
-    email: z.string().email('Enter a valid email address.'),
+    email: z.string().email("Enter a valid email address."),
     password: z
       .string()
-      .min(8, 'Password must contain at least 8 characters.')
-      .regex(/[A-Z]/, 'Password must contain an uppercase letter.')
-      .regex(/[a-z]/, 'Password must contain a lowercase letter.')
-      .regex(/[0-9]/, 'Password must contain a number.'),
+      .min(8, "Password must contain at least 8 characters.")
+      .regex(/[A-Z]/, "Password must contain an uppercase letter.")
+      .regex(/[a-z]/, "Password must contain a lowercase letter.")
+      .regex(/[0-9]/, "Password must contain a number."),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: 'Passwords do not match.',
-    path: ['confirmPassword'],
+    message: "Passwords do not match.",
+    path: ["confirmPassword"],
   });
 
 const OnboardingSchema = z.object({
-  studyGoal: z.string().min(1, 'Select a study goal.'),
+  studyGoal: z.string().min(1, "Select a study goal."),
   courseArea: z
     .string()
     .trim()
-    .min(2, 'Enter a course or subject area.')
-    .max(150, 'Course area must contain 150 characters or fewer.'),
+    .min(2, "Enter a course or subject area.")
+    .max(150, "Course area must contain 150 characters or fewer."),
 });
 
 const CreateStudySetSchema = z.object({
   title: z
     .string()
     .trim()
-    .min(2, 'Enter a study set title.')
-    .max(120, 'The title is too long.'),
+    .min(2, "Enter a study set title.")
+    .max(120, "The title is too long."),
   sourceNotes: z
     .string()
     .trim()
-    .min(80, 'Add more complete notes before generating flashcards.')
-    .max(20000, 'Study notes must contain 20,000 characters or fewer.'),
+    .min(80, "Add more complete notes before generating flashcards.")
+    .max(20000, "Study notes must contain 20,000 characters or fewer."),
 });
 
 async function getCurrentUser(): Promise<CurrentUser | null> {
@@ -105,20 +105,20 @@ async function getCurrentUser(): Promise<CurrentUser | null> {
 
 export async function signup(
   previousState: SignupState,
-  formData: FormData,
+  formData: FormData
 ): Promise<SignupState> {
   void previousState;
 
   const validated = SignupSchema.safeParse({
-    email: formData.get('email'),
-    password: formData.get('password'),
-    confirmPassword: formData.get('confirmPassword'),
+    email: formData.get("email"),
+    password: formData.get("password"),
+    confirmPassword: formData.get("confirmPassword"),
   });
 
   if (!validated.success) {
     return {
       errors: validated.error.flatten().fieldErrors,
-      message: 'Please correct the highlighted fields.',
+      message: "Please correct the highlighted fields.",
     };
   }
 
@@ -135,9 +135,9 @@ export async function signup(
     if (existingUsers.length > 0) {
       return {
         errors: {
-          email: ['An account with this email already exists.'],
+          email: ["An account with this email already exists."],
         },
-        message: 'Account creation failed.',
+        message: "Account creation failed.",
       };
     }
 
@@ -148,29 +148,25 @@ export async function signup(
       VALUES (${email}, ${passwordHash})
     `;
   } catch (error) {
-    if (
-      error instanceof Error &&
-      'code' in error &&
-      error.code === '23505'
-    ) {
+    if (error instanceof Error && "code" in error && error.code === "23505") {
       return {
         errors: {
-          email: ['An account with this email already exists.'],
+          email: ["An account with this email already exists."],
         },
       };
     }
 
-    console.error('Signup error:', error);
+    console.error("Signup error:", error);
 
     return {
-      message: 'Unable to create your account.',
+      message: "Unable to create your account.",
     };
   }
 
-  await signIn('credentials', {
+  await signIn("credentials", {
     email,
     password,
-    redirectTo: '/onboarding',
+    redirectTo: "/onboarding",
   });
 
   return {};
@@ -178,23 +174,23 @@ export async function signup(
 
 export async function login(
   previousState: LoginState,
-  formData: FormData,
+  formData: FormData
 ): Promise<LoginState> {
   void previousState;
 
   try {
-    await signIn('credentials', {
-      email: formData.get('email'),
-      password: formData.get('password'),
-      redirectTo: '/dashboard',
+    await signIn("credentials", {
+      email: formData.get("email"),
+      password: formData.get("password"),
+      redirectTo: "/dashboard",
     });
   } catch (error) {
     if (error instanceof AuthError) {
       return {
         message:
-          error.type === 'CredentialsSignin'
-            ? 'Invalid email or password.'
-            : 'Unable to sign in.',
+          error.type === "CredentialsSignin"
+            ? "Invalid email or password."
+            : "Unable to sign in.",
       };
     }
 
@@ -206,25 +202,25 @@ export async function login(
 
 export async function saveOnboarding(
   previousState: OnboardingState,
-  formData: FormData,
+  formData: FormData
 ): Promise<OnboardingState> {
   void previousState;
 
   const session = await auth();
 
   if (!session?.user?.email) {
-    redirect('/login');
+    redirect("/login");
   }
 
   const validated = OnboardingSchema.safeParse({
-    studyGoal: formData.get('studyGoal'),
-    courseArea: formData.get('courseArea'),
+    studyGoal: formData.get("studyGoal"),
+    courseArea: formData.get("courseArea"),
   });
 
   if (!validated.success) {
     return {
       errors: validated.error.flatten().fieldErrors,
-      message: 'Please correct the form.',
+      message: "Please correct the form.",
     };
   }
 
@@ -238,21 +234,21 @@ export async function saveOnboarding(
       WHERE email = ${session.user.email}
     `;
   } catch (error) {
-    console.error('Onboarding error:', error);
+    console.error("Onboarding error:", error);
 
     return {
-      message: 'Unable to save your study preferences.',
+      message: "Unable to save your study preferences.",
     };
   }
 
-  redirect('/dashboard');
+  redirect("/dashboard");
 }
 
 export async function skipOnboarding() {
   const session = await auth();
 
   if (!session?.user?.email) {
-    redirect('/login');
+    redirect("/login");
   }
 
   try {
@@ -265,34 +261,34 @@ export async function skipOnboarding() {
       WHERE email = ${session.user.email}
     `;
   } catch (error) {
-    console.error('Onboarding skip error:', error);
-    redirect('/onboarding');
+    console.error("Onboarding skip error:", error);
+    redirect("/onboarding");
   }
 
-  redirect('/dashboard');
+  redirect("/dashboard");
 }
 
 export async function createStudySet(
   previousState: CreateStudySetState,
-  formData: FormData,
+  formData: FormData
 ): Promise<CreateStudySetState> {
   void previousState;
 
   const session = await auth();
 
   if (!session?.user?.email) {
-    redirect('/login');
+    redirect("/login");
   }
 
   const validated = CreateStudySetSchema.safeParse({
-    title: formData.get('title'),
-    sourceNotes: formData.get('sourceNotes'),
+    title: formData.get("title"),
+    sourceNotes: formData.get("sourceNotes"),
   });
 
   if (!validated.success) {
     return {
       errors: validated.error.flatten().fieldErrors,
-      message: 'Please correct the highlighted fields.',
+      message: "Please correct the highlighted fields.",
     };
   }
 
@@ -303,10 +299,10 @@ export async function createStudySet(
     return {
       errors: {
         sourceNotes: [
-          'Add at least two clear definitions or explanatory sentences.',
+          "Add at least two clear definitions or explanatory sentences.",
         ],
       },
-      message: 'More structured study material is needed.',
+      message: "More structured study material is needed.",
     };
   }
 
@@ -317,7 +313,7 @@ export async function createStudySet(
 
     if (!currentUser) {
       return {
-        message: 'Your account could not be found.',
+        message: "Your account could not be found.",
       };
     }
 
@@ -339,7 +335,7 @@ export async function createStudySet(
       const newStudySet = studySets[0];
 
       if (!newStudySet) {
-        throw new Error('Study set creation failed.');
+        throw new Error("Study set creation failed.");
       }
 
       for (const card of generatedCards) {
@@ -366,10 +362,10 @@ export async function createStudySet(
       return newStudySet.id;
     });
   } catch (error) {
-    console.error('Create study set error:', error);
+    console.error("Create study set error:", error);
 
     return {
-      message: 'Unable to create the study set. Please try again.',
+      message: "Unable to create the study set. Please try again.",
     };
   }
 
@@ -378,47 +374,41 @@ export async function createStudySet(
 
 export async function updateFlashcard(
   previousState: FlashcardActionState,
-  formData: FormData,
+  formData: FormData
 ): Promise<FlashcardActionState> {
   void previousState;
 
   const session = await auth();
 
   if (!session?.user?.email) {
-    redirect('/login');
+    redirect("/login");
   }
 
   const validated = validateFlashcardForm(formData);
 
   if (!validated.success) {
     return {
-      status: 'error',
+      status: "error",
       message: validated.message,
       errors: validated.errors,
     };
   }
 
-  const {
-    cardId,
-    studySetId,
-    intent,
-    front,
-    back,
-  } = validated.data;
+  const { cardId, studySetId, intent, front, back } = validated.data;
 
   try {
     const currentUser = await getCurrentUser();
 
     if (!currentUser) {
       return {
-        status: 'error',
-        message: 'Your account could not be found.',
+        status: "error",
+        message: "Your account could not be found.",
       };
     }
 
     let updatedCards: { id: string }[];
 
-    if (intent === 'reject') {
+    if (intent === "reject") {
       updatedCards = await sql<{ id: string }[]>`
         UPDATE flashcards AS f
         SET
@@ -455,30 +445,30 @@ export async function updateFlashcard(
 
     if (updatedCards.length === 0) {
       return {
-        status: 'error',
+        status: "error",
         message:
-          'Flashcard not found or you do not have permission to change it.',
+          "Flashcard not found or you do not have permission to change it.",
       };
     }
   } catch (error) {
-    console.error('Flashcard update error:', error);
+    console.error("Flashcard update error:", error);
 
     return {
-      status: 'error',
-      message: 'Unable to update the flashcard. Please try again.',
+      status: "error",
+      message: "Unable to update the flashcard. Please try again.",
     };
   }
 
   revalidatePath(`/studysets/${studySetId}`);
-  revalidatePath('/dashboard');
+  revalidatePath("/dashboard");
 
   return {
-    status: 'success',
+    status: "success",
     message:
-      intent === 'accept'
-        ? 'Flashcard accepted.'
-        : intent === 'reject'
-          ? 'Flashcard rejected.'
-          : 'Changes saved.',
+      intent === "accept"
+        ? "Flashcard accepted."
+        : intent === "reject"
+          ? "Flashcard rejected."
+          : "Changes saved.",
   };
 }

@@ -1,7 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 
-// Test data
+// ============================================================
+// STUDY FLOW - COMPLETE END-TO-END REGRESSION TEST
+// ============================================================
 
 const testPassword = "StudyFlow123";
 
@@ -17,7 +19,9 @@ Variables store information that a program can access and modify during executio
 
 const updatedFront = "What is encapsulation in programming?";
 
-// Helper: Create a new account
+// ============================================================
+// HELPERS
+// ============================================================
 
 async function createAccount(page: Page, email: string) {
   await page.goto("/signup");
@@ -31,13 +35,12 @@ async function createAccount(page: Page, email: string) {
   await page
     .getByRole("button", {
       name: "Create account",
+      exact: true,
     })
     .click();
 
   await expect(page).toHaveURL(/\/onboarding$/);
 }
-
-// Helper: Log in to an existing account
 
 async function loginAccount(page: Page, email: string) {
   await page.goto("/login");
@@ -49,24 +52,67 @@ async function loginAccount(page: Page, email: string) {
   await page
     .getByRole("button", {
       name: "Log in",
+      exact: true,
     })
     .click();
 
   await expect(page).toHaveURL(/\/dashboard$/);
 }
 
-// Main end-to-end test
+function studySetHeading(page: Page) {
+  return page.getByRole("heading", {
+    name: "Programming Fundamentals",
+    exact: true,
+  });
+}
+
+// IMPORTANT:
+// Select the complete <section>, not the heading's
+// immediate parent <div>.
+//
+// This allows us to locate both the Create study set
+// button AND the existing study sets within the section.
+
+function dashboardStudySets(page: Page) {
+  return page.locator("section").filter({
+    has: page.getByRole("heading", {
+      name: "Your study sets",
+      exact: true,
+    }),
+  });
+}
+
+function dashboardPreferences(page: Page) {
+  return page.locator("section").filter({
+    has: page.getByRole("heading", {
+      name: "Your study preferences",
+      exact: true,
+    }),
+  });
+}
+
+function dashboardStudySetHeading(page: Page) {
+  return dashboardStudySets(page).getByRole("heading", {
+    name: "Programming Fundamentals",
+    exact: true,
+  });
+}
+
+function flashcardByFrontId(page: Page, frontId: string) {
+  return page.locator(`form:has(textarea[id="${frontId}"])`);
+}
+
+// ============================================================
+// MAIN END-TO-END TEST
+// ============================================================
 
 test("student study workflow and access control", async ({ page }) => {
-  // Allow enough time for the complete workflow.
   test.setTimeout(150_000);
 
-  // Print unexpected browser errors.
   page.on("pageerror", (error) => {
     console.log("BROWSER ERROR:", error.message);
   });
 
-  // Print HTTP server errors.
   page.on("response", (response) => {
     if (response.status() >= 500) {
       console.log("SERVER ERROR:", {
@@ -78,19 +124,20 @@ test("student study workflow and access control", async ({ page }) => {
 
   const firstEmail = `student-${randomUUID()}@example.com`;
 
-  // STEP 1: Create an account
+  // ==========================================================
+  // STEP 1: CREATE AN ACCOUNT
+  // ==========================================================
 
   await createAccount(page, firstEmail);
 
   console.log("STEP 1 PASSED: Account created.");
 
-  // STEP 2: Complete onboarding
+  // ==========================================================
+  // STEP 2: COMPLETE ONBOARDING
+  // ==========================================================
 
   console.log("STEP 2 STARTED: Completing onboarding.");
 
-  await expect(page).toHaveURL(/\/onboarding$/);
-
-  // Select the correct option from the study goal dropdown.
   const studyGoal = page.getByRole("combobox", {
     name: "What is your main study goal?",
   });
@@ -101,14 +148,12 @@ test("student study workflow and access control", async ({ page }) => {
     label: "Study programming",
   });
 
-  // Verify the correct option was selected.
   await expect(studyGoal.locator("option:checked")).toHaveText(
     "Study programming"
   );
 
   console.log("Study programming selected successfully.");
 
-  // Enter the course or subject.
   const courseArea = page.getByRole("textbox", {
     name: "Course or subject",
   });
@@ -119,10 +164,10 @@ test("student study workflow and access control", async ({ page }) => {
 
   console.log("Course area entered successfully.");
 
-  // Submit onboarding.
   await page
     .getByRole("button", {
       name: "Continue to dashboard",
+      exact: true,
     })
     .click();
 
@@ -130,27 +175,33 @@ test("student study workflow and access control", async ({ page }) => {
     timeout: 20000,
   });
 
-  // Verify the saved course appears on the dashboard.
   await expect(
-    page.getByText("Software Engineering", {
+    dashboardPreferences(page).getByText("Software Engineering", {
       exact: true,
     })
   ).toBeVisible();
 
   console.log("STEP 2 PASSED: Onboarding completed.");
 
-  // STEP 3: Open study set creation
+  // ==========================================================
+  // STEP 3: OPEN STUDY SET CREATION
+  // ==========================================================
 
-  await page
-    .getByRole("link", {
-      name: "Create study set",
-      exact: true,
-    })
-    .click();
+  const studySetsSection = dashboardStudySets(page);
+
+  await expect(studySetsSection).toHaveCount(1);
+
+  const createStudySetLink = studySetsSection.getByRole("link", {
+    name: "Create study set",
+    exact: true,
+  });
+
+  await expect(createStudySetLink).toHaveCount(1);
+
+  await createStudySetLink.click();
 
   await expect(page).toHaveURL(/\/studysets\/new$/);
 
-  // Wait until React has initialized the form.
   await expect(page.locator('form[data-hydrated="true"]')).toBeVisible({
     timeout: 30000,
   });
@@ -158,22 +209,31 @@ test("student study workflow and access control", async ({ page }) => {
   await expect(
     page.getByRole("button", {
       name: "Create study set and flashcards",
+      exact: true,
     })
   ).toBeEnabled();
 
   console.log("STEP 3 PASSED: Study set form is ready.");
 
-  // STEP 4: Enter the study set title
+  // ==========================================================
+  // STEP 4: ENTER STUDY SET TITLE
+  // ==========================================================
 
-  await page.getByLabel("Study set title").fill("Programming Fundamentals");
+  const studySetTitle = page.getByLabel("Study set title");
 
-  await expect(page.getByLabel("Study set title")).toHaveValue(
-    "Programming Fundamentals"
-  );
+  await studySetTitle.fill("Programming Fundamentals");
 
-  // STEP 5: Verify validation rejects insufficient notes
+  await expect(studySetTitle).toHaveValue("Programming Fundamentals");
 
-  await page.getByLabel("Study notes").fill("Short notes.");
+  console.log("STEP 4 PASSED: Study set title entered.");
+
+  // ==========================================================
+  // STEP 5: VALIDATE SHORT NOTES
+  // ==========================================================
+
+  const notesField = page.getByLabel("Study notes");
+
+  await notesField.fill("Short notes.");
 
   await page
     .getByRole("button", {
@@ -183,34 +243,35 @@ test("student study workflow and access control", async ({ page }) => {
     .click();
 
   await expect(
-    page.getByText("Add more complete notes before generating flashcards.")
+    page.getByText("Add more complete notes before generating flashcards.", {
+      exact: true,
+    })
   ).toBeVisible();
 
   await expect(page).toHaveURL(/\/studysets\/new$/);
 
   console.log("STEP 5 PASSED: Short notes rejected.");
 
-  // STEP 6: Verify form values are preserved
+  // ==========================================================
+  // STEP 6: VERIFY FORM VALUES ARE PRESERVED
+  // ==========================================================
 
-  await expect(page.getByLabel("Study set title")).toHaveValue(
-    "Programming Fundamentals"
-  );
+  await expect(studySetTitle).toHaveValue("Programming Fundamentals");
 
-  await expect(page.getByLabel("Study notes")).toHaveValue("Short notes.");
+  await expect(notesField).toHaveValue("Short notes.");
 
   console.log("STEP 6 PASSED: Form values preserved.");
 
-  // STEP 7: Create a study set using valid notes
+  // ==========================================================
+  // STEP 7: CREATE A STUDY SET
+  // ==========================================================
 
-  await page.getByLabel("Study notes").fill(testNotes);
+  await notesField.fill(testNotes);
 
-  await expect(page.getByLabel("Study notes")).toHaveValue(testNotes);
+  await expect(notesField).toHaveValue(testNotes);
 
-  await expect(page.getByLabel("Study set title")).toHaveValue(
-    "Programming Fundamentals"
-  );
+  await expect(studySetTitle).toHaveValue("Programming Fundamentals");
 
-  // Submit the valid notes.
   await page
     .getByRole("button", {
       name: "Create study set and flashcards",
@@ -218,19 +279,12 @@ test("student study workflow and access control", async ({ page }) => {
     })
     .click();
 
-  // Confirm the application navigates to the study set.
   await expect(page).toHaveURL(/\/studysets\/[0-9a-f-]+$/, { timeout: 30000 });
 
-  // Save the URL for later access control tests.
   const studySetPath = new URL(page.url()).pathname;
 
-  await expect(
-    page.getByRole("heading", {
-      name: "Programming Fundamentals",
-    })
-  ).toBeVisible();
+  await expect(studySetHeading(page)).toBeVisible();
 
-  // Confirm that flashcards were generated.
   const acceptButtons = page.getByRole("button", {
     name: "Accept",
     exact: true,
@@ -247,24 +301,27 @@ test("student study workflow and access control", async ({ page }) => {
   console.log("Study set URL:", studySetPath);
   console.log("Generated flashcards:", generatedCardCount);
 
-  // STEP 8: Identify a specific flashcard
+  // ==========================================================
+  // STEP 8: IDENTIFY A SPECIFIC FLASHCARD
+  // ==========================================================
 
   const firstFront = page.getByLabel("Front", { exact: true }).first();
 
   await expect(firstFront).toBeVisible();
 
-  // Capture the field ID to locate the same card later.
   const editedFrontId = await firstFront.getAttribute("id");
 
   expect(editedFrontId).toBeTruthy();
 
-  const editedCard = page.locator(`form:has(textarea[id="${editedFrontId}"])`);
+  const editedCard = flashcardByFrontId(page, editedFrontId!);
 
   await expect(editedCard).toHaveCount(1);
 
   console.log("STEP 8 PASSED: Selected flashcard.", editedFrontId);
 
-  // STEP 9: Accept the selected flashcard
+  // ==========================================================
+  // STEP 9: ACCEPT THE SELECTED FLASHCARD
+  // ==========================================================
 
   await editedCard
     .getByRole("button", {
@@ -281,9 +338,15 @@ test("student study workflow and access control", async ({ page }) => {
 
   console.log("STEP 9 PASSED: Flashcard accepted.");
 
-  // STEP 10: Edit the same flashcard
+  // ==========================================================
+  // STEP 10: EDIT THE SAME FLASHCARD
+  // ==========================================================
 
-  await editedCard.getByLabel("Front", { exact: true }).fill(updatedFront);
+  const editedFrontField = editedCard.getByLabel("Front", { exact: true });
+
+  await editedFrontField.fill(updatedFront);
+
+  await expect(editedFrontField).toHaveValue(updatedFront);
 
   await editedCard
     .getByRole("button", {
@@ -298,19 +361,18 @@ test("student study workflow and access control", async ({ page }) => {
     })
   ).toBeVisible();
 
+  await expect(editedFrontField).toHaveValue(updatedFront);
+
   console.log("STEP 10 PASSED: Flashcard edited.");
 
-  // STEP 11: Verify the edit persists after reloading
+  // ==========================================================
+  // STEP 11: VERIFY EDIT PERSISTENCE
+  // ==========================================================
 
   await page.reload();
 
-  await expect(
-    page.getByRole("heading", {
-      name: "Programming Fundamentals",
-    })
-  ).toBeVisible();
+  await expect(studySetHeading(page)).toBeVisible();
 
-  // Find the same card, regardless of display order.
   await expect(editedCard).toHaveCount(1);
 
   await expect(
@@ -319,9 +381,17 @@ test("student study workflow and access control", async ({ page }) => {
     })
   ).toHaveValue(updatedFront);
 
+  await expect(
+    editedCard.getByText("accepted", {
+      exact: true,
+    })
+  ).toBeVisible();
+
   console.log("STEP 11 PASSED: Flashcard changes persisted.");
 
-  // STEP 12: Reject a different flashcard
+  // ==========================================================
+  // STEP 12: REJECT A DIFFERENT FLASHCARD
+  // ==========================================================
 
   const cardsBeforeRejection = await page
     .getByLabel("Front", { exact: true })
@@ -329,7 +399,6 @@ test("student study workflow and access control", async ({ page }) => {
 
   expect(cardsBeforeRejection).toBeGreaterThanOrEqual(2);
 
-  // Find a rejectable flashcard other than the edited one.
   const rejectCandidate = page
     .locator("form")
     .filter({
@@ -345,29 +414,22 @@ test("student study workflow and access control", async ({ page }) => {
 
   await expect(rejectCandidate).toBeVisible();
 
-  // Capture its unique field ID BEFORE rejecting it.
   const rejectedFrontId = await rejectCandidate
     .getByLabel("Front", { exact: true })
     .getAttribute("id");
 
   expect(rejectedFrontId).toBeTruthy();
 
-  // Create a stable locator for this specific flashcard.
-  const rejectedCard = page.locator(
-    `form:has(textarea[id="${rejectedFrontId}"])`
-  );
+  const rejectedCard = flashcardByFrontId(page, rejectedFrontId!);
 
   await expect(rejectedCard).toHaveCount(1);
 
   console.log("Rejecting flashcard:", rejectedFrontId);
 
-  // Clear both fields to verify rejection works
-  // even when the flashcard content is empty.
   await rejectedCard.getByLabel("Front", { exact: true }).fill("");
 
   await rejectedCard.getByLabel("Back", { exact: true }).fill("");
 
-  // Reject the selected flashcard.
   await rejectedCard
     .getByRole("button", {
       name: "Reject",
@@ -375,22 +437,20 @@ test("student study workflow and access control", async ({ page }) => {
     })
     .click();
 
-  // Verify this SPECIFIC flashcard disappears.
   await expect(rejectedCard).toHaveCount(0);
 
-  // Verify the total number of visible cards decreases.
   await expect(page.getByLabel("Front", { exact: true })).toHaveCount(
     cardsBeforeRejection - 1
   );
 
-  // Verify the edited flashcard still exists.
   await expect(editedCard).toHaveCount(1);
 
-  await expect(editedCard.getByLabel("Front", { exact: true })).toHaveValue(
-    updatedFront
-  );
+  await expect(
+    editedCard.getByLabel("Front", {
+      exact: true,
+    })
+  ).toHaveValue(updatedFront);
 
-  // Reload to verify the rejection persists.
   await page.reload();
 
   await expect(rejectedCard).toHaveCount(0);
@@ -401,25 +461,33 @@ test("student study workflow and access control", async ({ page }) => {
 
   console.log("STEP 12 PASSED: Flashcard rejected.");
 
-  // STEP 13: Return to dashboard
+  // ==========================================================
+  // STEP 13: RETURN TO DASHBOARD
+  // ==========================================================
 
   await page
     .getByRole("link", {
       name: "Back to dashboard",
+      exact: true,
     })
     .click();
 
   await expect(page).toHaveURL(/\/dashboard$/);
 
-  await expect(page.getByText("Programming Fundamentals")).toBeVisible();
+  // FIX:
+  // This now searches the entire Your study sets section.
+  await expect(dashboardStudySetHeading(page)).toBeVisible();
 
   console.log("STEP 13 PASSED: Study set on dashboard.");
 
-  // STEP 14: Log out
+  // ==========================================================
+  // STEP 14: LOG OUT
+  // ==========================================================
 
   await page
     .getByRole("button", {
       name: "Log out",
+      exact: true,
     })
     .click();
 
@@ -427,7 +495,9 @@ test("student study workflow and access control", async ({ page }) => {
 
   console.log("STEP 14 PASSED: User logged out.");
 
-  // STEP 15: Verify protected route redirects guests
+  // ==========================================================
+  // STEP 15: VERIFY PROTECTED ROUTE
+  // ==========================================================
 
   await page.goto("/studysets/new");
 
@@ -435,67 +505,95 @@ test("student study workflow and access control", async ({ page }) => {
 
   console.log("STEP 15 PASSED: Protected route requires login.");
 
-  // STEP 16: Log back in
+  // ==========================================================
+  // STEP 16: LOG BACK IN
+  // ==========================================================
 
   await loginAccount(page, firstEmail);
 
-  await expect(page.getByText("Programming Fundamentals")).toBeVisible();
+  // FIX:
+  // Target the study set heading within the complete section.
+  await expect(dashboardStudySetHeading(page)).toBeVisible();
 
   console.log("STEP 16 PASSED: Login successful.");
 
-  // STEP 17: Verify the original study set is accessible
+  // ==========================================================
+  // STEP 17: VERIFY STUDY SET AFTER LOGIN
+  // ==========================================================
 
   await page.goto(studySetPath);
 
-  await expect(
-    page.getByRole("heading", {
-      name: "Programming Fundamentals",
-    })
-  ).toBeVisible();
+  await expect(studySetHeading(page)).toBeVisible();
 
-  // Verify the edited flashcard still exists.
   await expect(
-    page
-      .locator(`form:has(textarea[id="${editedFrontId}"])`)
-      .getByLabel("Front", { exact: true })
+    flashcardByFrontId(page, editedFrontId!).getByLabel("Front", {
+      exact: true,
+    })
   ).toHaveValue(updatedFront);
+
+  await expect(flashcardByFrontId(page, rejectedFrontId!)).toHaveCount(0);
 
   console.log("STEP 17 PASSED: Study set accessible after login.");
 
-  // STEP 18: Log out before creating a second account
+  // ==========================================================
+  // STEP 18: LOG OUT BEFORE SWITCHING ACCOUNTS
+  // ==========================================================
 
   await page.goto("/dashboard");
 
   await page
     .getByRole("button", {
       name: "Log out",
+      exact: true,
     })
     .click();
 
   await expect(page).toHaveURL(/\/login$/);
 
-  // STEP 19: Create a second account
+  console.log("STEP 18 PASSED: First account logged out.");
+
+  // ==========================================================
+  // STEP 19: CREATE SECOND ACCOUNT AND SKIP ONBOARDING
+  // ==========================================================
 
   const secondEmail = `student-${randomUUID()}@example.com`;
 
   await createAccount(page, secondEmail);
 
-  // Verify onboarding can be skipped.
   await page
     .getByRole("button", {
       name: "Skip for now",
+      exact: true,
     })
     .click();
 
   await expect(page).toHaveURL(/\/dashboard$/);
 
-  await expect(page.getByText("General Study", { exact: true })).toBeVisible();
+  const secondPreferences = dashboardPreferences(page);
 
-  await expect(page.getByText("General", { exact: true })).toBeVisible();
+  await expect(
+    secondPreferences.getByText("General Study", {
+      exact: true,
+    })
+  ).toBeVisible();
+
+  await expect(
+    secondPreferences.getByText("General", {
+      exact: true,
+    })
+  ).toBeVisible();
+
+  await expect(
+    dashboardStudySets(page).getByText("You have no study sets yet.", {
+      exact: true,
+    })
+  ).toBeVisible();
 
   console.log("STEP 19 PASSED: Second account created; onboarding skipped.");
 
-  // STEP 20: Verify users cannot access others' study sets
+  // ==========================================================
+  // STEP 20: VERIFY ACCESS CONTROL
+  // ==========================================================
 
   const unauthorizedResponse = await page.goto(studySetPath);
 
@@ -503,11 +601,7 @@ test("student study workflow and access control", async ({ page }) => {
 
   expect(unauthorizedResponse?.status()).toBe(404);
 
-  await expect(
-    page.getByRole("heading", {
-      name: "Programming Fundamentals",
-    })
-  ).toHaveCount(0);
+  await expect(studySetHeading(page)).toHaveCount(0);
 
   console.log("STEP 20 PASSED: Another user cannot access the study set.");
 

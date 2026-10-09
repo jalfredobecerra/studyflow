@@ -1,14 +1,14 @@
-import type { Metadata } from 'next';
-import { redirect } from 'next/navigation';
+import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
-import OnboardingForm from '@/app/ui/onboarding-form';
-import { auth } from '@/auth';
-import sql from '@/lib/db';
+import OnboardingForm from "@/app/ui/onboarding-form";
+import { auth } from "@/auth";
+import sql from "@/lib/db";
 
 export const metadata: Metadata = {
-  title: 'Study Preferences',
+  title: "Study Preferences",
   description:
-    'Choose your study goal and course area to personalize your learning workflow.',
+    "Choose your study goal and course area to personalize your learning workflow.",
   robots: {
     index: false,
     follow: false,
@@ -24,7 +24,7 @@ export default async function OnboardingPage() {
   const session = await auth();
 
   if (!session?.user?.email) {
-    redirect('/login');
+    redirect("/login");
   }
 
   const users = await sql<UserPreferences[]>`
@@ -37,7 +37,7 @@ export default async function OnboardingPage() {
   const preferences = users[0];
 
   if (!preferences) {
-    redirect('/login');
+    redirect("/login");
   }
 
   return (
@@ -54,8 +54,8 @@ export default async function OnboardingPage() {
         </div>
 
         <OnboardingForm
-          studyGoal={preferences.study_goal ?? ''}
-          courseArea={preferences.course_area ?? ''}
+          studyGoal={preferences.study_goal ?? ""}
+          courseArea={preferences.course_area ?? ""}
         />
       </div>
     </main>

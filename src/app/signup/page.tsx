@@ -1,11 +1,11 @@
-import type { Metadata } from 'next';
+import type { Metadata } from "next";
 
-import SignupForm from '@/app/ui/signup-form';
+import SignupForm from "@/app/ui/signup-form";
 
 export const metadata: Metadata = {
-  title: 'Create Account',
+  title: "Create Account",
   description:
-    'Create a Study Flow account to save your study materials and learning preferences.',
+    "Create a Study Flow account to save your study materials and learning preferences.",
   robots: {
     index: false,
     follow: false,

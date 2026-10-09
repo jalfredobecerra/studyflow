@@ -1,15 +1,15 @@
-import type { Metadata } from 'next';
+import type { Metadata } from "next";
 
-import './globals.css';
+import "./globals.css";
 
 export const metadata: Metadata = {
-  applicationName: 'Study Flow',
+  applicationName: "Study Flow",
   title: {
-    default: 'Study Flow',
-    template: '%s | Study Flow',
+    default: "Study Flow",
+    template: "%s | Study Flow",
   },
   description:
-    'Study Flow helps students organize notes, create flashcards, and build better study habits.',
+    "Study Flow helps students organize notes, create flashcards, and build better study habits.",
 };
 
 export default function RootLayout({
