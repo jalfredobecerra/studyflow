@@ -1,3 +1,5 @@
+import "server-only";
+
 import postgres from "postgres";
 
 if (!process.env.POSTGRES_URL) {

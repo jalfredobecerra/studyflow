@@ -1,13 +1,43 @@
-import { redirect } from "next/navigation";
+import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 
-import OnboardingForm from "@/app/ui/onboarding-form";
-import { auth } from "@/auth";
+import OnboardingForm from '@/app/ui/onboarding-form';
+import { auth } from '@/auth';
+import sql from '@/lib/db';
+
+export const metadata: Metadata = {
+  title: 'Study Preferences',
+  description:
+    'Choose your study goal and course area to personalize your learning workflow.',
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
+
+type UserPreferences = {
+  study_goal: string | null;
+  course_area: string | null;
+};
 
 export default async function OnboardingPage() {
   const session = await auth();
 
-  if (!session?.user) {
-    redirect("/login");
+  if (!session?.user?.email) {
+    redirect('/login');
+  }
+
+  const users = await sql<UserPreferences[]>`
+    SELECT study_goal, course_area
+    FROM users
+    WHERE email = ${session.user.email}
+    LIMIT 1
+  `;
+
+  const preferences = users[0];
+
+  if (!preferences) {
+    redirect('/login');
   }
 
   return (
@@ -19,11 +49,14 @@ export default async function OnboardingPage() {
           </h1>
 
           <p className="mt-2 text-slate-600">
-            Tell Study Flow what you are working on.
+            Choose your study goal and course area.
           </p>
         </div>
 
-        <OnboardingForm />
+        <OnboardingForm
+          studyGoal={preferences.study_goal ?? ''}
+          courseArea={preferences.course_area ?? ''}
+        />
       </div>
     </main>
   );

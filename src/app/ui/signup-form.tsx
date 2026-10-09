@@ -32,15 +32,19 @@ export default function SignupForm() {
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           required
+          aria-invalid={Boolean(state.errors?.email)}
+          aria-describedby={state.errors?.email ? "email-error" : undefined}
           className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-indigo-500"
           placeholder="student@example.com"
         />
 
-        {state.errors?.email?.map((error) => (
-          <p key={error} className="mt-1 text-sm text-red-600">
-            {error}
-          </p>
-        ))}
+        {state.errors?.email && (
+          <div id="email-error" className="mt-1 text-sm text-red-600">
+            {state.errors.email.map((error) => (
+              <p key={error}>{error}</p>
+            ))}
+          </div>
+        )}
       </div>
 
       <div>
@@ -57,15 +61,21 @@ export default function SignupForm() {
           type="password"
           required
           minLength={8}
+          aria-invalid={Boolean(state.errors?.password)}
+          aria-describedby={
+            state.errors?.password ? "password-error" : undefined
+          }
           className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-indigo-500"
           placeholder="Create a password"
         />
 
-        {state.errors?.password?.map((error) => (
-          <p key={error} className="mt-1 text-sm text-red-600">
-            {error}
-          </p>
-        ))}
+        {state.errors?.password && (
+          <div id="password-error" className="mt-1 text-sm text-red-600">
+            {state.errors.password.map((error) => (
+              <p key={error}>{error}</p>
+            ))}
+          </div>
+        )}
       </div>
 
       <div>
@@ -81,15 +91,24 @@ export default function SignupForm() {
           name="confirmPassword"
           type="password"
           required
+          aria-invalid={Boolean(state.errors?.confirmPassword)}
+          aria-describedby={
+            state.errors?.confirmPassword ? "confirm-password-error" : undefined
+          }
           className="w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-indigo-500"
           placeholder="Enter your password again"
         />
 
-        {state.errors?.confirmPassword?.map((error) => (
-          <p key={error} className="mt-1 text-sm text-red-600">
-            {error}
-          </p>
-        ))}
+        {state.errors?.confirmPassword && (
+          <div
+            id="confirm-password-error"
+            className="mt-1 text-sm text-red-600"
+          >
+            {state.errors.confirmPassword.map((error) => (
+              <p key={error}>{error}</p>
+            ))}
+          </div>
+        )}
       </div>
 
       {state.message && (

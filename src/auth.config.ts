@@ -11,7 +11,8 @@ export const authConfig = {
 
       const isProtectedRoute =
         nextUrl.pathname.startsWith("/dashboard") ||
-        nextUrl.pathname.startsWith("/onboarding");
+        nextUrl.pathname.startsWith("/onboarding") ||
+        nextUrl.pathname.startsWith("/studysets");
 
       const isAuthPage =
         nextUrl.pathname === "/login" || nextUrl.pathname === "/signup";
