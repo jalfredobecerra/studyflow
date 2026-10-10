@@ -1,0 +1,7 @@
+# W06 Product Demo Summary — Study Flow
+
+Study Flow is a web application that helps students turn unstructured study notes into useful review material. Students preparing for coursework and exams often struggle to organize notes, revisit information at appropriate intervals, and see whether they are making steady progress. Study Flow addresses these problems through personal study sets, generated flashcards, review scheduling, and a single dashboard for study progress.
+
+The intended audience is students and independent learners looking for a simple way to practice and retain information. A typical user creates an account, chooses a study goal, pastes notes into a new study set, and reviews the generated flashcards before accepting or editing them. The student then completes a timed review session, rates each card by recall performance, and receives an updated review date. Students can also rename study sets, customize review preferences, and manage their flashcards.
+
+Study Flow's main value is combining note organization, repeated practice, and progress feedback in one authenticated application. The dashboard displays upcoming reviews, unique cards reviewed, completed sessions, and study streaks. A PostgreSQL-backed API also allows users to browse and rename their own study sets without a full page reload. The application is built with Next.js, TypeScript, Auth.js, Tailwind CSS, and PostgreSQL, and protects each student's data by requiring authentication and checking record ownership.
