@@ -1,9 +1,16 @@
+
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
-  // Explicit project root avoids tracing a parent Windows package-lock.json.
+
+  // Keep file tracing inside the Study Flow project.
   outputFileTracingRoot: process.cwd(),
+
+  // Limit concurrent build workers to reduce memory usage.
+  experimental: {
+    cpus: 2,
+  },
 };
 
 export default nextConfig;
