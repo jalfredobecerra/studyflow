@@ -215,12 +215,20 @@ export default async function DashboardPage() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <h2 className="text-2xl font-semibold">Your study sets</h2>
 
-          <Link
-            href="/studysets/new"
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-white"
-          >
-            Create study set
-          </Link>
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              href="/studysets/library"
+              className="font-medium text-indigo-800 underline underline-offset-2"
+            >
+              Browse and rename study sets
+            </Link>
+            <Link
+              href="/studysets/new"
+              className="rounded-lg bg-indigo-700 px-4 py-2 font-medium text-white hover:bg-indigo-800"
+            >
+              Create study set
+            </Link>
+          </div>
         </div>
 
         {data.sets.length === 0 ? (

@@ -1,35 +1,31 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-
-import { requireStudyUser, studySql } from "@/lib/study-data";
 
 import ReviewSession from "@/app/ui/review-session";
+import {
+  ActionLink,
+  BackLink,
+  PageContainer,
+  PageHeader,
+  SurfacePanel,
+} from "@/app/ui/layout-primitives";
+import { requireStudyUser, studySql } from "@/lib/study-data";
 
 export const metadata: Metadata = {
-  title: "Review Flashcards | Study Flow",
+  title: "Review Flashcards",
+  robots: { index: false, follow: false },
 };
 
 export default async function ReviewPage() {
   const user = await requireStudyUser();
 
   const rows = await studySql`
-    SELECT
-      f.id,
-      f.front,
-      f.back,
-      s.title AS study_set_title
+    SELECT f.id, f.front, f.back, s.title AS study_set_title
     FROM flashcards AS f
-    JOIN study_sets AS s
-      ON s.id = f.study_set_id
+    JOIN study_sets AS s ON s.id = f.study_set_id
     WHERE s.user_id = ${user.id}
       AND f.status = 'accepted'
-      AND (
-        f.due_at IS NULL
-        OR f.due_at <= NOW()
-      )
-    ORDER BY
-      COALESCE(f.due_at, NOW()) ASC,
-      f.id ASC
+      AND (f.due_at IS NULL OR f.due_at <= NOW())
+    ORDER BY COALESCE(f.due_at, NOW()) ASC, f.id ASC
     LIMIT 50
   `;
 
@@ -41,20 +37,20 @@ export default async function ReviewPage() {
   }));
 
   return (
-    <main className="mx-auto max-w-3xl space-y-8 p-6">
-      <header>
-        <Link href="/dashboard" className="text-sm text-indigo-600">
-          Back to dashboard
-        </Link>
-
-        <h1 className="mt-4 text-3xl font-bold">Review flashcards</h1>
-
-        <p className="mt-2 text-slate-600">
-          Review your due cards and track your progress.
-        </p>
-      </header>
-
+    <PageContainer width="narrow">
+      <PageHeader
+        title="Review flashcards"
+        description="Review due cards and track your progress."
+      >
+        <BackLink />
+      </PageHeader>
       <ReviewSession cards={cards} sessionMinutes={user.sessionMinutes} />
-    </main>
+      <SurfacePanel>
+        <p className="mb-3 text-sm text-slate-700">
+          Want to organize your study materials?
+        </p>
+        <ActionLink href="/studysets/library">Study set library</ActionLink>
+      </SurfacePanel>
+    </PageContainer>
   );
 }
