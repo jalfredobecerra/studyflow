@@ -136,7 +136,7 @@ npm run build -- --webpack
 npx playwright test --workers=1
 ```
 
-The original branch passed 10 Playwright browser tests and 15 Vitest tests before these W06 changes. **The new changes require rerunning every check; prior results do not certify this patch.** The added `study-set-api.spec.ts` verifies unauthenticated access, the client fetch and PATCH persistence, input validation, and ownership isolation.
+The original branch passed 13 Playwright browser tests and 20 Vitest tests before these W06 changes. **The new changes require rerunning every check; prior results do not certify this patch.** The added `study-set-api.spec.ts` verifies unauthenticated access, the client fetch and PATCH persistence, input validation, and ownership isolation.
 
 ## UI design and accessibility
 
